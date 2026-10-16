@@ -12,9 +12,10 @@ import { formatRupiah } from '../lib/utils';
 
 interface SummaryCardsProps {
   summary: FinancialSummary;
+  isAuthenticated?: boolean;
 }
 
-export const SummaryCards: React.FC<SummaryCardsProps> = ({ summary }) => {
+export const SummaryCards: React.FC<SummaryCardsProps> = ({ summary, isAuthenticated = false }) => {
   const currentMonthName = new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric' }).format(new Date());
 
   // Rasio pengeluaran terhadap pemasukan
@@ -22,6 +23,40 @@ export const SummaryCards: React.FC<SummaryCardsProps> = ({ summary }) => {
     ? Math.round((summary.totalExpense / summary.totalIncome) * 100)
     : 0;
 
+  // Jika pengunjung publik (belum login), hanya tampilkan Saldo Kas Utama
+  if (!isAuthenticated) {
+    return (
+      <div className="mb-6">
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-800 via-teal-800 to-emerald-950 p-6 sm:p-7 text-white shadow-xl shadow-emerald-950/20 border border-emerald-600/40">
+          <div className="absolute -right-6 -bottom-6 w-36 h-36 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none" />
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-xs font-bold tracking-widest text-emerald-200 uppercase flex items-center gap-1.5">
+                  <Sparkles className="w-4 h-4 text-amber-400" />
+                  Saldo Kas Utama Masjid Shalahuddin
+                </span>
+                <span className="font-semibold text-amber-300 bg-amber-400/10 px-2 py-0.5 rounded text-[11px] border border-amber-400/20">
+                  Real-Time
+                </span>
+              </div>
+              <div className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-white mb-2">
+                {formatRupiah(summary.currentBalance)}
+              </div>
+              <p className="text-xs sm:text-sm text-emerald-100/90 font-light max-w-xl">
+                Posisi saldo kas terkini Masjid Shalahuddin KPP Pratama Jayapura yang siap dialokasikan untuk operasional, kemakmuran, dan kegiatan dakwah ibadah jamaah.
+              </p>
+            </div>
+            <div className="p-4 bg-emerald-700/60 rounded-2xl border border-emerald-500/40 text-amber-300 self-start sm:self-auto shadow-inner shrink-0">
+              <Wallet className="w-9 h-9" />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Jika sudah login sebagai Pengurus DKM, tampilkan 4 kartu lengkap
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 mb-6">
       {/* Saldo Kas Utama */}

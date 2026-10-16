@@ -33,6 +33,7 @@ import {
   CreditCard,
   CheckCircle2,
   BookOpen,
+  Lock,
 } from 'lucide-react';
 
 export default function App() {
@@ -282,41 +283,68 @@ export default function App() {
         </div>
 
         {/* Financial Summary Cards */}
-        <SummaryCards summary={financialSummary} />
-
-        {/* Charts & Category Analytics */}
-        <TransactionCharts transactions={transactions} />
-
-        {/* Filters & Search */}
-        <TransactionFilters
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          typeFilter={typeFilter}
-          onTypeFilterChange={setTypeFilter}
-          categoryFilter={categoryFilter}
-          onCategoryFilterChange={setCategoryFilter}
-          periodFilter={periodFilter}
-          onPeriodFilterChange={setPeriodFilter}
-          availableCategories={availableCategoryNames}
-          totalMatches={filteredTransactions.length}
-          onResetFilters={handleResetFilters}
+        <SummaryCards
+          summary={financialSummary}
+          isAuthenticated={session.isAuthenticated}
         />
 
-        {/* Public Transaction Table */}
-        <TransactionTable
-          transactions={filteredTransactions}
-          session={session}
-          isLoading={isLoading}
-          onRefresh={loadData}
-          onEdit={(tx) => {
-            setEditingTransaction(tx);
-            setIsTransactionModalOpen(true);
-          }}
-          onDelete={handleDeleteTransaction}
-          onExportCSV={() => exportTransactionsToCSV(filteredTransactions)}
-          onOpenPrintReport={() => setIsPrintReportOpen(true)}
-          onOpenPenyampaianJumat={() => setIsPenyampaianJumatOpen(true)}
-        />
+        {/* Jika belum login: Tampilkan info bahwa rincian mutasi kas dilindungi */}
+        {!session.isAuthenticated ? (
+          <div className="rounded-2xl bg-white border border-slate-200/90 p-7 sm:p-9 text-center shadow-xs mb-8">
+            <div className="w-13 h-13 mx-auto rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-700 mb-3.5 shadow-2xs">
+              <Lock className="w-6 h-6 text-emerald-700" />
+            </div>
+            <h3 className="text-base sm:text-lg font-bold text-slate-800 mb-1.5">
+              Rincian Mutasi & Pos Beban Khusus Pengurus DKM
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-500 max-w-lg mx-auto mb-5 leading-relaxed">
+              Total pemasukan, total pengeluaran, grafik alokasi pos anggaran, serta rincian lengkap daftar mutasi kas masjid hanya dapat dilihat setelah masuk sebagai Pengurus DKM terdaftar (Ketua / Bendahara).
+            </p>
+            <button
+              onClick={() => setIsLoginOpen(true)}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-700 to-teal-800 hover:from-emerald-600 hover:to-teal-700 text-white font-bold text-xs sm:text-sm transition shadow-md cursor-pointer"
+            >
+              <Lock className="w-4 h-4 text-amber-300" />
+              <span>Akses Masuk Pengurus DKM</span>
+            </button>
+          </div>
+        ) : (
+          <>
+            {/* Charts & Category Analytics */}
+            <TransactionCharts transactions={transactions} />
+
+            {/* Filters & Search */}
+            <TransactionFilters
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              typeFilter={typeFilter}
+              onTypeFilterChange={setTypeFilter}
+              categoryFilter={categoryFilter}
+              onCategoryFilterChange={setCategoryFilter}
+              periodFilter={periodFilter}
+              onPeriodFilterChange={setPeriodFilter}
+              availableCategories={availableCategoryNames}
+              totalMatches={filteredTransactions.length}
+              onResetFilters={handleResetFilters}
+            />
+
+            {/* Transaction Table */}
+            <TransactionTable
+              transactions={filteredTransactions}
+              session={session}
+              isLoading={isLoading}
+              onRefresh={loadData}
+              onEdit={(tx) => {
+                setEditingTransaction(tx);
+                setIsTransactionModalOpen(true);
+              }}
+              onDelete={handleDeleteTransaction}
+              onExportCSV={() => exportTransactionsToCSV(filteredTransactions)}
+              onOpenPrintReport={() => setIsPrintReportOpen(true)}
+              onOpenPenyampaianJumat={() => setIsPenyampaianJumatOpen(true)}
+            />
+          </>
+        )}
       </main>
 
       {/* Footer */}
