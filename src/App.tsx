@@ -9,6 +9,7 @@ import { LoginModal } from './components/LoginModal';
 import { PrintReportModal } from './components/PrintReportModal';
 import { PenyampaianJumatModal } from './components/PenyampaianJumatModal';
 import { SetupGuideModal } from './components/SetupGuideModal';
+import { PWABanner } from './components/PWABanner';
 import {
   Transaction,
   Category,
@@ -32,7 +33,6 @@ import {
   ShieldCheck,
   CreditCard,
   CheckCircle2,
-  BookOpen,
   Lock,
 } from 'lucide-react';
 
@@ -231,6 +231,9 @@ export default function App() {
         onOpenPenyampaianJumat={() => setIsPenyampaianJumatOpen(true)}
       />
 
+      {/* PWA Install Banner */}
+      <PWABanner />
+
       {/* Main Container */}
       <main className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 flex-1">
         {/* Transparency Hero Banner */}
@@ -242,13 +245,6 @@ export default function App() {
                   <ShieldCheck className="w-3.5 h-3.5" />
                   <span>Prinsip Akuntabilitas & Amanah Kas Masjid</span>
                 </div>
-                <button
-                  onClick={() => setIsSetupGuideOpen(true)}
-                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-xs font-semibold border border-amber-400/40 transition cursor-pointer"
-                >
-                  <BookOpen className="w-3 h-3 text-amber-300" />
-                  <span>Panduan SQL & Setup</span>
-                </button>
               </div>
               <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white mb-1.5">
                 Transparansi Mutasi Kas Masjid Shalahuddin
@@ -360,15 +356,8 @@ export default function App() {
             Jl. Ahmad Yani No. 8, Gurabesi, Distrik Jayapura Utara, Kota Jayapura, Papua 99111
           </div>
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => setIsSetupGuideOpen(true)}
-              className="text-emerald-700 hover:underline font-medium cursor-pointer"
-            >
-              Panduan Database
-            </button>
-            <span className="text-slate-300">•</span>
             <div className="text-slate-400">
-              Powered by Supabase & React • Direct Cloud Write
+              Sistem Informasi & Transparansi Kas Keuangan
             </div>
           </div>
         </div>

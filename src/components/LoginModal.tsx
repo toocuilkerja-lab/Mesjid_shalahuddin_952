@@ -6,7 +6,6 @@ import {
   KeyRound,
   AlertCircle,
   LogIn,
-  Database,
 } from 'lucide-react';
 import { authenticatePengurus } from '../lib/supabase';
 import { UserSession } from '../types';
@@ -42,7 +41,6 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
     try {
       setIsLoading(true);
-      // Cek langsung ke tabel 10001_mesjidshalahuddin_users di Supabase
       const user = await authenticatePengurus(username, password);
 
       if (user) {
@@ -55,7 +53,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
         onClose();
       } else {
         setErrorMessage(
-          'Username atau password salah! Gunakan akun "bendahara" atau "ketua" dengan password "123456" yang terdaftar pada tabel 10001_mesjidshalahuddin_users.'
+          'Username atau password salah! Silakan periksa kembali kredensial akun pengurus DKM Anda.'
         );
       }
     } catch (err: unknown) {
@@ -114,7 +112,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           {/* Quick Preset Selector Buttons */}
           <div className="mb-4">
             <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-              Pilih Akun Pengurus Terdaftar:
+              Pilih Akun Pengurus:
             </label>
             <div className="grid grid-cols-2 gap-2">
               <button
@@ -166,7 +164,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                   required
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="bendahara atau ketua"
+                  placeholder="Masukkan username"
                   className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white font-mono text-xs"
                 />
                 <User className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
@@ -187,18 +185,6 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                   className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white font-mono text-xs"
                 />
                 <KeyRound className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-              </div>
-              <div className="mt-1 text-[11px] text-slate-500 flex items-center justify-between">
-                <span>Password default: <code className="font-mono font-bold text-emerald-700 bg-emerald-50 px-1 py-0.5 rounded">123456</code></span>
-                <span className="text-slate-400">Tabel: 10001_mesjidshalahuddin_users</span>
-              </div>
-            </div>
-
-            {/* Supabase status banner */}
-            <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-[11px] text-slate-600 flex items-start gap-2">
-              <Database className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-              <div>
-                <strong>Autentikasi Database:</strong> Login langsung memverifikasi data pada tabel <code className="font-mono text-emerald-800">10001_mesjidshalahuddin_users</code> di Supabase.
               </div>
             </div>
 
