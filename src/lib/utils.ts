@@ -87,14 +87,38 @@ export function calculateFinancialSummary(transactions: Transaction[]): Financia
 /**
  * Export data transaksi ke format CSV
  */
-export function exportTransactionsToCSV(transactions: Transaction[]): void {
+export function exportTransactionsToCSV(
+  transactions: Transaction[],
+  allTransactions?: Transaction[]
+): void {
+  const sourceList = allTransactions && allTransactions.length > 0 ? allTransactions : transactions;
+  const sorted = [...sourceList].sort((a, b) => {
+    const dateA = new Date(a.date).getTime();
+    const dateB = new Date(b.date).getTime();
+    if (dateA !== dateB) return dateA - dateB;
+    const createdA = a.created_at ? new Date(a.created_at).getTime() : 0;
+    const createdB = b.created_at ? new Date(b.created_at).getTime() : 0;
+    return createdA - createdB;
+  });
+
+  const map = new Map<string, number>();
+  let running = 0;
+  for (const item of sorted) {
+    if (item.type === 'masuk') {
+      running += Number(item.amount) || 0;
+    } else {
+      running -= Number(item.amount) || 0;
+    }
+    map.set(item.id, running);
+  }
+
   const headers = [
     'No',
     'Tanggal',
     'Jenis',
-    'Kategori',
     'Uraian Transaksi',
-    'Nominal (Rp)',
+    'Mutasi (Rp)',
+    'Sisa Saldo (Rp)',
     'Pihak Terkait / Sumber',
     'No. Bukti/Kwitansi',
     'Keterangan',
@@ -105,9 +129,9 @@ export function exportTransactionsToCSV(transactions: Transaction[]): void {
     idx + 1,
     `"${tx.date}"`,
     `"${tx.type === 'masuk' ? 'Pemasukan' : 'Pengeluaran'}"`,
-    `"${tx.category.replace(/"/g, '""')}"`,
     `"${tx.title.replace(/"/g, '""')}"`,
-    tx.amount,
+    tx.type === 'masuk' ? tx.amount : -tx.amount,
+    map.get(tx.id) ?? 0,
     `"${(tx.source_destination || '-').replace(/"/g, '""')}"`,
     `"${(tx.receipt_no || '-').replace(/"/g, '""')}"`,
     `"${(tx.notes || '-').replace(/"/g, '""')}"`,

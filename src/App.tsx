@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Header } from './components/Header';
 import { SummaryCards } from './components/SummaryCards';
-import { TransactionCharts } from './components/TransactionCharts';
 import { TransactionFilters } from './components/TransactionFilters';
 import { TransactionTable } from './components/TransactionTable';
 import { TransactionModal } from './components/TransactionModal';
@@ -12,7 +11,6 @@ import { SetupGuideModal } from './components/SetupGuideModal';
 import { PWABanner } from './components/PWABanner';
 import {
   Transaction,
-  Category,
   UserSession,
   PeriodFilter,
   TransactionType,
@@ -22,7 +20,6 @@ import {
   createTransaction,
   updateTransaction,
   deleteTransaction,
-  getCategories,
 } from './lib/supabase';
 import {
   calculateFinancialSummary,
@@ -33,13 +30,11 @@ import {
   ShieldCheck,
   CreditCard,
   CheckCircle2,
-  Lock,
 } from 'lucide-react';
 
 export default function App() {
   // Application Data States
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'info' | 'error' } | null>(null);
 
@@ -51,7 +46,6 @@ export default function App() {
   // Filter & Search States
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | TransactionType>('all');
-  const [categoryFilter, setCategoryFilter] = useState('all');
   const [periodFilter, setPeriodFilter] = useState<PeriodFilter>('all');
 
   // Modal Visibility States
@@ -74,12 +68,8 @@ export default function App() {
   const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [txData, catData] = await Promise.all([
-        getTransactions(),
-        getCategories(),
-      ]);
+      const txData = await getTransactions();
       setTransactions(txData);
-      setCategories(catData);
     } catch (error) {
       console.error('Error fetching data:', error);
       showToast('Gagal memuat data transaksi', 'error');
@@ -139,10 +129,6 @@ export default function App() {
       if (typeFilter !== 'all' && tx.type !== typeFilter) {
         return false;
       }
-      // Category filter
-      if (categoryFilter !== 'all' && tx.category !== categoryFilter) {
-        return false;
-      }
       // Period filter
       if (periodFilter !== 'all') {
         const txDate = new Date(tx.date);
@@ -164,37 +150,27 @@ export default function App() {
       if (searchQuery.trim() !== '') {
         const q = searchQuery.toLowerCase();
         const matchTitle = tx.title.toLowerCase().includes(q);
-        const matchCat = tx.category.toLowerCase().includes(q);
         const matchNotes = (tx.notes || '').toLowerCase().includes(q);
         const matchParty = (tx.source_destination || '').toLowerCase().includes(q);
         const matchRef = (tx.receipt_no || '').toLowerCase().includes(q);
 
-        if (!matchTitle && !matchCat && !matchNotes && !matchParty && !matchRef) {
+        if (!matchTitle && !matchNotes && !matchParty && !matchRef) {
           return false;
         }
       }
 
       return true;
     });
-  }, [transactions, typeFilter, categoryFilter, periodFilter, searchQuery]);
+  }, [transactions, typeFilter, periodFilter, searchQuery]);
 
   // Overall Financial Summary based on all transactions
   const financialSummary = useMemo(() => {
     return calculateFinancialSummary(transactions);
   }, [transactions]);
 
-  // Available unique categories
-  const availableCategoryNames = useMemo(() => {
-    const set = new Set<string>();
-    categories.forEach((c) => set.add(c.name));
-    transactions.forEach((t) => set.add(t.category));
-    return Array.from(set);
-  }, [categories, transactions]);
-
   const handleResetFilters = () => {
     setSearchQuery('');
     setTypeFilter('all');
-    setCategoryFilter('all');
     setPeriodFilter('all');
   };
 
@@ -284,42 +260,17 @@ export default function App() {
           isAuthenticated={session.isAuthenticated}
         />
 
-        {/* Jika belum login: Tampilkan info bahwa rincian mutasi kas dilindungi */}
-        {!session.isAuthenticated ? (
-          <div className="rounded-2xl bg-white border border-slate-200/90 p-7 sm:p-9 text-center shadow-xs mb-8">
-            <div className="w-13 h-13 mx-auto rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-700 mb-3.5 shadow-2xs">
-              <Lock className="w-6 h-6 text-emerald-700" />
-            </div>
-            <h3 className="text-base sm:text-lg font-bold text-slate-800 mb-1.5">
-              Rincian Mutasi & Pos Beban Khusus Pengurus DKM
-            </h3>
-            <p className="text-xs sm:text-sm text-slate-500 max-w-lg mx-auto mb-5 leading-relaxed">
-              Total pemasukan, total pengeluaran, grafik alokasi pos anggaran, serta rincian lengkap daftar mutasi kas masjid hanya dapat dilihat setelah masuk sebagai Pengurus DKM terdaftar (Ketua / Bendahara).
-            </p>
-            <button
-              onClick={() => setIsLoginOpen(true)}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-700 to-teal-800 hover:from-emerald-600 hover:to-teal-700 text-white font-bold text-xs sm:text-sm transition shadow-md cursor-pointer"
-            >
-              <Lock className="w-4 h-4 text-amber-300" />
-              <span>Akses Masuk Pengurus DKM</span>
-            </button>
-          </div>
-        ) : (
+        {/* Konten Khusus Pengurus DKM: Hanya muncul saat login */}
+        {session.isAuthenticated && (
           <>
-            {/* Charts & Category Analytics */}
-            <TransactionCharts transactions={transactions} />
-
             {/* Filters & Search */}
             <TransactionFilters
               searchQuery={searchQuery}
               onSearchChange={setSearchQuery}
               typeFilter={typeFilter}
               onTypeFilterChange={setTypeFilter}
-              categoryFilter={categoryFilter}
-              onCategoryFilterChange={setCategoryFilter}
               periodFilter={periodFilter}
               onPeriodFilterChange={setPeriodFilter}
-              availableCategories={availableCategoryNames}
               totalMatches={filteredTransactions.length}
               onResetFilters={handleResetFilters}
             />
@@ -327,6 +278,7 @@ export default function App() {
             {/* Transaction Table */}
             <TransactionTable
               transactions={filteredTransactions}
+              allTransactions={transactions}
               session={session}
               isLoading={isLoading}
               onRefresh={loadData}
@@ -335,7 +287,7 @@ export default function App() {
                 setIsTransactionModalOpen(true);
               }}
               onDelete={handleDeleteTransaction}
-              onExportCSV={() => exportTransactionsToCSV(filteredTransactions)}
+              onExportCSV={() => exportTransactionsToCSV(filteredTransactions, transactions)}
               onOpenPrintReport={() => setIsPrintReportOpen(true)}
               onOpenPenyampaianJumat={() => setIsPenyampaianJumatOpen(true)}
             />
@@ -385,7 +337,6 @@ export default function App() {
             setEditingTransaction(null);
           }}
           session={session}
-          categories={categories}
           editingTransaction={editingTransaction}
           onSubmit={handleSaveTransaction}
         />

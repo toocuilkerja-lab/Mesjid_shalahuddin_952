@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS "10001_mesjidshalahuddin_transactions" (
     "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     "date" DATE NOT NULL DEFAULT CURRENT_DATE,
     "type" VARCHAR(10) NOT NULL CHECK ("type" IN ('masuk', 'keluar')),
-    "category" VARCHAR(100) NOT NULL,
+    "category" VARCHAR(100) DEFAULT '',
     "title" VARCHAR(255) NOT NULL,
     "amount" NUMERIC(15, 2) NOT NULL CHECK ("amount" > 0),
     "source_destination" VARCHAR(150),

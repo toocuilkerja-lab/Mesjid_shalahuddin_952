@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Calendar, X, Tag } from 'lucide-react';
+import { Search, Calendar, X } from 'lucide-react';
 import { PeriodFilter, TransactionType } from '../types';
 
 interface TransactionFiltersProps {
@@ -7,11 +7,8 @@ interface TransactionFiltersProps {
   onSearchChange: (val: string) => void;
   typeFilter: 'all' | TransactionType;
   onTypeFilterChange: (val: 'all' | TransactionType) => void;
-  categoryFilter: string;
-  onCategoryFilterChange: (val: string) => void;
   periodFilter: PeriodFilter;
   onPeriodFilterChange: (val: PeriodFilter) => void;
-  availableCategories: string[];
   totalMatches: number;
   onResetFilters: () => void;
 }
@@ -21,18 +18,14 @@ export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
   onSearchChange,
   typeFilter,
   onTypeFilterChange,
-  categoryFilter,
-  onCategoryFilterChange,
   periodFilter,
   onPeriodFilterChange,
-  availableCategories,
   totalMatches,
   onResetFilters,
 }) => {
   const hasActiveFilters =
     searchQuery.trim() !== '' ||
     typeFilter !== 'all' ||
-    categoryFilter !== 'all' ||
     periodFilter !== 'all';
 
   return (
@@ -109,23 +102,6 @@ export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
               <option value="this_year">Tahun 2026</option>
             </select>
             <Calendar className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-          </div>
-
-          {/* Category Dropdown */}
-          <div className="relative">
-            <select
-              value={categoryFilter}
-              onChange={(e) => onCategoryFilterChange(e.target.value)}
-              className="appearance-none pl-8 pr-7 py-2 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-700 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 max-w-[190px] truncate cursor-pointer"
-            >
-              <option value="all">Semua Kategori</option>
-              {availableCategories.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
-              ))}
-            </select>
-            <Tag className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
           </div>
 
           {/* Reset Filters button if any active */}

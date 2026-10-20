@@ -26,6 +26,30 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
     year: 'numeric',
   }).format(new Date());
 
+  // Perhitungan saldo berjalan (rekening koran)
+  const balanceMap = React.useMemo(() => {
+    const sorted = [...transactions].sort((a, b) => {
+      const dateA = new Date(a.date).getTime();
+      const dateB = new Date(b.date).getTime();
+      if (dateA !== dateB) return dateA - dateB;
+      const createdA = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const createdB = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return createdA - createdB;
+    });
+
+    const map = new Map<string, number>();
+    let running = 0;
+    for (const item of sorted) {
+      if (item.type === 'masuk') {
+        running += Number(item.amount) || 0;
+      } else {
+        running -= Number(item.amount) || 0;
+      }
+      map.set(item.id, running);
+    }
+    return map;
+  }, [transactions]);
+
   if (!isOpen) return null;
 
   return (
@@ -130,9 +154,9 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
                     <th className="p-2 border-r border-slate-300 w-8 text-center">No</th>
                     <th className="p-2 border-r border-slate-300 w-24">Tanggal</th>
                     <th className="p-2 border-r border-slate-300">Uraian Transaksi</th>
-                    <th className="p-2 border-r border-slate-300">Kategori</th>
-                    <th className="p-2 border-r border-slate-300 text-right w-28">Masuk (Rp)</th>
-                    <th className="p-2 text-right w-28">Keluar (Rp)</th>
+                    <th className="p-2 border-r border-slate-300 text-right w-24">Masuk (Rp)</th>
+                    <th className="p-2 border-r border-slate-300 text-right w-24">Keluar (Rp)</th>
+                    <th className="p-2 text-right w-28 bg-slate-200/50">Sisa Saldo (Rp)</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 text-slate-800">
@@ -152,28 +176,31 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
                           </div>
                         )}
                       </td>
-                      <td className="p-2 border-r border-slate-200 text-[11px]">
-                        {tx.category}
-                      </td>
                       <td className="p-2 border-r border-slate-200 text-right font-medium text-emerald-700">
                         {tx.type === 'masuk' ? formatRupiah(tx.amount) : '-'}
                       </td>
-                      <td className="p-2 text-right font-medium text-rose-600">
+                      <td className="p-2 border-r border-slate-200 text-right font-medium text-rose-600">
                         {tx.type === 'keluar' ? formatRupiah(tx.amount) : '-'}
+                      </td>
+                      <td className="p-2 text-right font-bold text-slate-900 font-mono">
+                        {formatRupiah(balanceMap.get(tx.id) ?? 0)}
                       </td>
                     </tr>
                   ))}
                 </tbody>
                 <tfoot className="bg-slate-100 font-bold text-xs border-t-2 border-slate-300">
                   <tr>
-                    <td colSpan={4} className="p-2 text-right border-r border-slate-300 uppercase">
-                      Total
+                    <td colSpan={3} className="p-2 text-right border-r border-slate-300 uppercase">
+                      Total & Saldo Akhir
                     </td>
                     <td className="p-2 border-r border-slate-300 text-right text-emerald-800">
                       {formatRupiah(summary.totalIncome)}
                     </td>
-                    <td className="p-2 text-right text-rose-700">
+                    <td className="p-2 border-r border-slate-300 text-right text-rose-700">
                       {formatRupiah(summary.totalExpense)}
+                    </td>
+                    <td className="p-2 text-right text-slate-900 font-mono font-bold">
+                      {formatRupiah(summary.currentBalance)}
                     </td>
                   </tr>
                 </tfoot>

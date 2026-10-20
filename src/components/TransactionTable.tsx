@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Download,
   Printer,
@@ -16,6 +16,7 @@ import { formatRupiah, formatDateIndo, formatDateShort } from '../lib/utils';
 
 interface TransactionTableProps {
   transactions: Transaction[];
+  allTransactions?: Transaction[];
   session: UserSession;
   isLoading: boolean;
   onRefresh: () => void;
@@ -28,6 +29,7 @@ interface TransactionTableProps {
 
 export const TransactionTable: React.FC<TransactionTableProps> = ({
   transactions,
+  allTransactions,
   session,
   isLoading,
   onRefresh,
@@ -38,6 +40,32 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
   onOpenPenyampaianJumat,
 }) => {
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // Perhitungan saldo berjalan (rekening koran kas masjid)
+  const balanceMap = useMemo(() => {
+    const sourceList = allTransactions && allTransactions.length > 0 ? allTransactions : transactions;
+    // Urutkan dari kronologis paling awal ke terbaru
+    const sorted = [...sourceList].sort((a, b) => {
+      const dateA = new Date(a.date).getTime();
+      const dateB = new Date(b.date).getTime();
+      if (dateA !== dateB) return dateA - dateB;
+      const createdA = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const createdB = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return createdA - createdB;
+    });
+
+    const map = new Map<string, number>();
+    let running = 0;
+    for (const item of sorted) {
+      if (item.type === 'masuk') {
+        running += Number(item.amount) || 0;
+      } else {
+        running -= Number(item.amount) || 0;
+      }
+      map.set(item.id, running);
+    }
+    return map;
+  }, [transactions, allTransactions]);
 
   const confirmDelete = (tx: Transaction) => {
     if (window.confirm(`Yakin ingin menghapus transaksi "${tx.title}" senilai ${formatRupiah(tx.amount)}? Data akan terhapus langsung dari database Supabase.`)) {
@@ -129,9 +157,9 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                   <th className="py-3 px-4 w-12 text-center">No</th>
                   <th className="py-3 px-4">Tanggal</th>
                   <th className="py-3 px-4">Uraian & Keterangan</th>
-                  <th className="py-3 px-4">Kategori</th>
                   <th className="py-3 px-4">Tipe</th>
-                  <th className="py-3 px-4 text-right">Nominal (Rp)</th>
+                  <th className="py-3 px-4 text-right">Mutasi (Rp)</th>
+                  <th className="py-3 px-4 text-right bg-emerald-50/50 text-emerald-900">Sisa Saldo (Rp)</th>
                   <th className="py-3 px-4">Pihak / Bukti</th>
                   {session.isAuthenticated && (
                     <th className="py-3 px-4 text-center w-24">Aksi</th>
@@ -161,11 +189,6 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                         )}
                       </td>
                       <td className="py-3.5 px-4 whitespace-nowrap">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
-                          {tx.category}
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-4 whitespace-nowrap">
                         <span
                           className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold ${
                             isIncome
@@ -187,6 +210,9 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                         }`}
                       >
                         {isIncome ? '+' : '-'} {formatRupiah(tx.amount)}
+                      </td>
+                      <td className="py-3.5 px-4 text-right font-bold whitespace-nowrap text-sm text-slate-900 bg-emerald-50/20 font-mono">
+                        {formatRupiah(balanceMap.get(tx.id) ?? 0)}
                       </td>
                       <td className="py-3.5 px-4 whitespace-nowrap text-xs text-slate-500">
                         <div className="truncate max-w-[150px] font-medium text-slate-700">
@@ -256,10 +282,13 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                       </p>
                     )}
                   </div>
-                  <div className="flex items-center justify-between text-xs pt-1">
-                    <span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-[11px] font-medium">
-                      {tx.category}
-                    </span>
+                  <div className="flex items-center justify-between text-xs pt-1.5 border-t border-slate-100">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[11px] text-slate-500 font-medium">Sisa Saldo:</span>
+                      <span className="font-bold font-mono text-xs bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded border border-emerald-100">
+                        {formatRupiah(balanceMap.get(tx.id) ?? 0)}
+                      </span>
+                    </div>
                     <span
                       className={`text-base font-extrabold ${
                         isIncome ? 'text-emerald-700' : 'text-rose-600'

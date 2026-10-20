@@ -4,7 +4,7 @@ export interface Transaction {
   id: string;
   date: string; // ISO date 'YYYY-MM-DD'
   type: TransactionType;
-  category: string;
+  category?: string;
   title: string;
   amount: number;
   source_destination?: string; // Penerima / Pembayar

@@ -5,7 +5,6 @@ import {
   ArrowUpRight,
   Calendar,
   DollarSign,
-  Tag,
   FileText,
   User,
   Hash,
@@ -15,7 +14,7 @@ import {
   Copy,
   Check,
 } from 'lucide-react';
-import { Transaction, TransactionType, Category, UserSession } from '../types';
+import { Transaction, TransactionType, UserSession } from '../types';
 import { formatRupiah } from '../lib/utils';
 import { SUPABASE_FIX_RLS_SQL } from '../lib/sqlSchema';
 
@@ -23,7 +22,6 @@ interface TransactionModalProps {
   isOpen: boolean;
   onClose: () => void;
   session: UserSession;
-  categories: Category[];
   editingTransaction?: Transaction | null;
   onSubmit: (data: Omit<Transaction, 'id' | 'created_at'>) => Promise<void>;
 }
@@ -32,7 +30,6 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
   isOpen,
   onClose,
   session,
-  categories,
   editingTransaction,
   onSubmit,
 }) => {
@@ -40,7 +37,6 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
   const [type, setType] = useState<TransactionType>('masuk');
   const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [amount, setAmount] = useState<string>('');
-  const [category, setCategory] = useState<string>('');
   const [title, setTitle] = useState<string>('');
   const [sourceDestination, setSourceDestination] = useState<string>('');
   const [receiptNo, setReceiptNo] = useState<string>('');
@@ -61,7 +57,6 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
       setType(editingTransaction.type);
       setDate(editingTransaction.date);
       setAmount(editingTransaction.amount.toString());
-      setCategory(editingTransaction.category);
       setTitle(editingTransaction.title);
       setSourceDestination(editingTransaction.source_destination || '');
       setReceiptNo(editingTransaction.receipt_no || '');
@@ -74,23 +69,9 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
       setSourceDestination('');
       setReceiptNo('');
       setNotes('');
-      // Set default category for 'masuk'
-      const firstCat = categories.find((c) => c.type === 'masuk');
-      setCategory(firstCat ? firstCat.name : 'Infaq Kotak Amal Jumat');
     }
     setErrorMsg(null);
-  }, [editingTransaction, categories, isOpen]);
-
-  // When type toggles, select a valid matching category
-  const handleTypeChange = (newType: TransactionType) => {
-    setType(newType);
-    const validCat = categories.find((c) => c.type === newType);
-    if (validCat) {
-      setCategory(validCat.name);
-    }
-  };
-
-  const filteredCategories = categories.filter((c) => c.type === type);
+  }, [editingTransaction, isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -105,19 +86,15 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
       setErrorMsg('Harap isi uraian/judul transaksi');
       return;
     }
-    if (!category) {
-      setErrorMsg('Harap pilih kategori transaksi');
-      return;
-    }
 
     try {
       setIsSubmitting(true);
-      // Direct write to Supabase (bypasses any browser cache/storage)
+      // Direct write to Supabase
       await onSubmit({
         type,
         date,
         amount: numericAmount,
-        category,
+        category: editingTransaction?.category || '',
         title: title.trim(),
         source_destination: sourceDestination.trim() || undefined,
         receipt_no: receiptNo.trim() || undefined,
@@ -206,7 +183,7 @@ ALTER TABLE "10001_mesjidshalahuddin_friday_schedule" DISABLE ROW LEVEL SECURITY
             <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
-                onClick={() => handleTypeChange('masuk')}
+                onClick={() => setType('masuk')}
                 className={`py-2.5 px-3 rounded-xl font-bold flex items-center justify-center gap-2 border transition cursor-pointer ${
                   type === 'masuk'
                     ? 'bg-emerald-50 border-emerald-500 text-emerald-800 ring-2 ring-emerald-500/20'
@@ -218,7 +195,7 @@ ALTER TABLE "10001_mesjidshalahuddin_friday_schedule" DISABLE ROW LEVEL SECURITY
               </button>
               <button
                 type="button"
-                onClick={() => handleTypeChange('keluar')}
+                onClick={() => setType('keluar')}
                 className={`py-2.5 px-3 rounded-xl font-bold flex items-center justify-center gap-2 border transition cursor-pointer ${
                   type === 'keluar'
                     ? 'bg-rose-50 border-rose-500 text-rose-800 ring-2 ring-rose-500/20'
@@ -274,28 +251,6 @@ ALTER TABLE "10001_mesjidshalahuddin_friday_schedule" DISABLE ROW LEVEL SECURITY
             </div>
           </div>
 
-          {/* Kategori */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Kategori Pos Kas <span className="text-red-500">*</span>
-            </label>
-            <div className="relative">
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                required
-                className="w-full pl-9 pr-8 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white font-medium text-slate-800 cursor-pointer"
-              >
-                {filteredCategories.map((cat) => (
-                  <option key={cat.id} value={cat.name}>
-                    {cat.name}
-                  </option>
-                ))}
-              </select>
-              <Tag className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-            </div>
-          </div>
-
           {/* Uraian / Judul */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
@@ -307,8 +262,8 @@ ALTER TABLE "10001_mesjidshalahuddin_friday_schedule" DISABLE ROW LEVEL SECURITY
                 required
                 placeholder={
                   type === 'masuk'
-                    ? 'Misal: Infaq Kotak Jumat Pekan Ke-2 Oktober'
-                    : 'Misal: Bisyarah Khotib Shalat Jumat Ustadz Fauzi'
+                    ? 'Misal: Infaq Kotak Shalat Jumat Pekan Ke-2 Oktober'
+                    : 'Misal: Bisyarah Khotib Shalat Jumat'
                 }
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
@@ -327,7 +282,7 @@ ALTER TABLE "10001_mesjidshalahuddin_friday_schedule" DISABLE ROW LEVEL SECURITY
               <div className="relative">
                 <input
                   type="text"
-                  placeholder={type === 'masuk' ? 'Misal: Jamaah / Pegawai Seksi PDI' : 'Misal: PLN / Toko Sentosa Jayapura'}
+                  placeholder={type === 'masuk' ? 'Misal: Jamaah Shalat Jumat' : 'Misal: Toko / Petugas Kebersihan'}
                   value={sourceDestination}
                   onChange={(e) => setSourceDestination(e.target.value)}
                   className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
