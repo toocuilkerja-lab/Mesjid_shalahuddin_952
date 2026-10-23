@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
   Lock,
@@ -22,9 +22,17 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   onLoginSuccess,
 }) => {
   const [username, setUsername] = useState<'bendahara' | 'ketua' | string>('bendahara');
-  const [password, setPassword] = useState('123456');
+  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Pastikan form password selalu bersih saat modal dibuka
+  useEffect(() => {
+    if (isOpen) {
+      setPassword('');
+      setErrorMessage(null);
+    }
+  }, [isOpen]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,6 +58,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           userEmail: `${user.username}@masjidshalahuddin.kpp`,
           role: user.role,
         });
+        setPassword('');
         onClose();
       } else {
         setErrorMessage(
@@ -66,7 +75,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
   const selectPreset = (selectedUser: 'bendahara' | 'ketua') => {
     setUsername(selectedUser);
-    setPassword('123456');
+    setPassword('');
     setErrorMessage(null);
   };
 
@@ -153,7 +162,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
             </div>
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form onSubmit={handleLogin} className="space-y-4" autoComplete="off">
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
                 Username Pengurus <span className="text-red-500">*</span>
@@ -161,7 +170,9 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               <div className="relative">
                 <input
                   type="text"
+                  name="dkm_username"
                   required
+                  autoComplete="off"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder="Masukkan username"
@@ -178,7 +189,9 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               <div className="relative">
                 <input
                   type="password"
+                  name="dkm_auth_password"
                   required
+                  autoComplete="new-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Masukkan password"

@@ -242,7 +242,7 @@ export default function App() {
                     Bank Syariah Indonesia (BSI)
                   </div>
                   <div className="font-mono text-amber-300 font-extrabold text-sm tracking-widest">
-                    XXX XXXX XXX
+                    716 9620 207
                   </div>
                 </div>
               </div>
