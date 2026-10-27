@@ -1,7 +1,7 @@
 import React from 'react';
 import { X, Printer, Building2 } from 'lucide-react';
 import { Transaction, FinancialSummary } from '../types';
-import { formatRupiah } from '../lib/utils';
+import { formatRupiah, sortTransactionsDesc, calculateRunningBalances } from '../lib/utils';
 
 interface PrintReportModalProps {
   isOpen: boolean;
@@ -28,26 +28,12 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
 
   // Perhitungan saldo berjalan (rekening koran)
   const balanceMap = React.useMemo(() => {
-    const sorted = [...transactions].sort((a, b) => {
-      const dateA = new Date(a.date).getTime();
-      const dateB = new Date(b.date).getTime();
-      if (dateA !== dateB) return dateA - dateB;
-      const createdA = a.created_at ? new Date(a.created_at).getTime() : 0;
-      const createdB = b.created_at ? new Date(b.created_at).getTime() : 0;
-      return createdA - createdB;
-    });
+    return calculateRunningBalances(transactions);
+  }, [transactions]);
 
-    const map = new Map<string, number>();
-    let running = 0;
-    for (const item of sorted) {
-      if (item.type === 'masuk') {
-        running += Number(item.amount) || 0;
-      } else {
-        running -= Number(item.amount) || 0;
-      }
-      map.set(item.id, running);
-    }
-    return map;
+  // Urutkan transaksi Z - A (terbaru di atas)
+  const displayTransactions = React.useMemo(() => {
+    return sortTransactionsDesc(transactions);
   }, [transactions]);
 
   if (!isOpen) return null;
@@ -96,7 +82,7 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
                   Kantor Pelayanan Pajak (KPP) Pratama Jayapura
                 </h3>
                 <p className="text-xs text-slate-600 mt-1">
-                  Jl. Ahmad Yani No. 8, Kel. Gurabesi, Distrik Jayapura Utara, Kota Jayapura, Papua 99111
+                  Jalan Otonom No. 3 Kotaraja, Wahno, Distrik Jayapura Selatan, Kota Jayapura, Papua 99226
                 </p>
                 <p className="text-[11px] text-slate-500">
                   Email: dkm.shalahuddin@kppjayapura.id • Portal Transparansi Kas Terbuka
@@ -160,7 +146,7 @@ export const PrintReportModal: React.FC<PrintReportModalProps> = ({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 text-slate-800">
-                  {transactions.map((tx, idx) => (
+                  {displayTransactions.map((tx, idx) => (
                     <tr key={tx.id} className="border-b border-slate-200">
                       <td className="p-2 border-r border-slate-200 text-center font-mono text-[10px] text-slate-500">
                         {idx + 1}

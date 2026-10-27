@@ -48,6 +48,46 @@ export function formatDateShort(dateStr: string): string {
 }
 
 /**
+ * Urutkan daftar transaksi secara kronologis terbalik (Z - A):
+ * Tanggal terbaru di paling atas (No. 1).
+ * Jika tanggal sama, pertahankan urutan relatif asli (stable sort).
+ */
+export function sortTransactionsDesc(transactions: Transaction[]): Transaction[] {
+  return [...transactions].sort((a, b) => {
+    // 1. Tanggal (terbaru di atas)
+    const dateComp = b.date.localeCompare(a.date);
+    if (dateComp !== 0) return dateComp;
+    return 0;
+  });
+}
+
+/**
+ * Hitung saldo berjalan (rekening koran kas masjid) secara presisi.
+ * Urutan mutasi kas ditampilkan Z - A (terbaru di atas, terlama di bawah).
+ * Bergerak kronologis dari bawah ke atas:
+ * Saldo(Row i) = Saldo(Row i+1) + (pemasukan ? +nominal : -nominal).
+ * Sehingga pada nomor urut 5 saldo 22.585.890, lalu pada nomor urut 4
+ * saat pengeluaran 100 ribu, sisa saldo menjadi tepat 22.485.890.
+ */
+export function calculateRunningBalances(allTransactions: Transaction[]): Map<string, number> {
+  const desc = sortTransactionsDesc(allTransactions);
+  // Balik urutan: index 0 adalah transaksi paling lampau (kronologis A - Z)
+  const asc = [...desc].reverse();
+
+  const map = new Map<string, number>();
+  let running = 0;
+  for (const item of asc) {
+    if (item.type === 'masuk') {
+      running += Number(item.amount) || 0;
+    } else {
+      running -= Number(item.amount) || 0;
+    }
+    map.set(item.id, running);
+  }
+  return map;
+}
+
+/**
  * Hitung ringkasan keuangan
  */
 export function calculateFinancialSummary(transactions: Transaction[]): FinancialSummary {
@@ -92,25 +132,8 @@ export function exportTransactionsToCSV(
   allTransactions?: Transaction[]
 ): void {
   const sourceList = allTransactions && allTransactions.length > 0 ? allTransactions : transactions;
-  const sorted = [...sourceList].sort((a, b) => {
-    const dateA = new Date(a.date).getTime();
-    const dateB = new Date(b.date).getTime();
-    if (dateA !== dateB) return dateA - dateB;
-    const createdA = a.created_at ? new Date(a.created_at).getTime() : 0;
-    const createdB = b.created_at ? new Date(b.created_at).getTime() : 0;
-    return createdA - createdB;
-  });
-
-  const map = new Map<string, number>();
-  let running = 0;
-  for (const item of sorted) {
-    if (item.type === 'masuk') {
-      running += Number(item.amount) || 0;
-    } else {
-      running -= Number(item.amount) || 0;
-    }
-    map.set(item.id, running);
-  }
+  const balanceMap = calculateRunningBalances(sourceList);
+  const displayList = sortTransactionsDesc(transactions);
 
   const headers = [
     'No',
@@ -125,13 +148,13 @@ export function exportTransactionsToCSV(
     'Pencatat',
   ];
 
-  const rows = transactions.map((tx, idx) => [
+  const rows = displayList.map((tx, idx) => [
     idx + 1,
     `"${tx.date}"`,
     `"${tx.type === 'masuk' ? 'Pemasukan' : 'Pengeluaran'}"`,
     `"${tx.title.replace(/"/g, '""')}"`,
     tx.type === 'masuk' ? tx.amount : -tx.amount,
-    map.get(tx.id) ?? 0,
+    balanceMap.get(tx.id) ?? 0,
     `"${(tx.source_destination || '-').replace(/"/g, '""')}"`,
     `"${(tx.receipt_no || '-').replace(/"/g, '""')}"`,
     `"${(tx.notes || '-').replace(/"/g, '""')}"`,

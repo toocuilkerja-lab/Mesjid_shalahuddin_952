@@ -24,6 +24,7 @@ import {
 import {
   calculateFinancialSummary,
   exportTransactionsToCSV,
+  sortTransactionsDesc,
 } from './lib/utils';
 import {
   Building2,
@@ -69,7 +70,7 @@ export default function App() {
     setIsLoading(true);
     try {
       const txData = await getTransactions();
-      setTransactions(txData);
+      setTransactions(sortTransactionsDesc(txData));
     } catch (error) {
       console.error('Error fetching data:', error);
       showToast('Gagal memuat data transaksi', 'error');
@@ -95,7 +96,7 @@ export default function App() {
         showToast('Transaksi berhasil diperbarui di database Supabase');
       } else {
         const created = await createTransaction(data);
-        setTransactions((prev) => [created, ...prev]);
+        setTransactions((prev) => sortTransactionsDesc([created, ...prev]));
         showToast('Transaksi kas baru berhasil dicatat di Supabase');
       }
       setEditingTransaction(null);
@@ -304,8 +305,8 @@ export default function App() {
               Masjid Shalahuddin KPP Pratama Jayapura
             </span>
           </div>
-          <div>
-            Jl. Ahmad Yani No. 8, Gurabesi, Distrik Jayapura Utara, Kota Jayapura, Papua 99111
+          <div className="text-center sm:text-left text-xs sm:text-sm text-slate-500">
+            Jalan Otonom No. 3 Kotaraja, Wahno, Distrik Jayapura Selatan, Kota Jayapura, Papua 99226
           </div>
           <div className="flex items-center gap-3">
             <div className="text-slate-400">

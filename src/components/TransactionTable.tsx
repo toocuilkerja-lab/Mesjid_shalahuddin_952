@@ -12,7 +12,13 @@ import {
   FileText,
 } from 'lucide-react';
 import { Transaction, UserSession } from '../types';
-import { formatRupiah, formatDateIndo, formatDateShort } from '../lib/utils';
+import {
+  formatRupiah,
+  formatDateIndo,
+  formatDateShort,
+  sortTransactionsDesc,
+  calculateRunningBalances,
+} from '../lib/utils';
 
 interface TransactionTableProps {
   transactions: Transaction[];
@@ -42,30 +48,16 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // Perhitungan saldo berjalan (rekening koran kas masjid)
+  // Menghitung kronologis dari transaksi lampau ke terbaru sehingga mutasi Z-A selalu tepat matematis
   const balanceMap = useMemo(() => {
     const sourceList = allTransactions && allTransactions.length > 0 ? allTransactions : transactions;
-    // Urutkan dari kronologis paling awal ke terbaru
-    const sorted = [...sourceList].sort((a, b) => {
-      const dateA = new Date(a.date).getTime();
-      const dateB = new Date(b.date).getTime();
-      if (dateA !== dateB) return dateA - dateB;
-      const createdA = a.created_at ? new Date(a.created_at).getTime() : 0;
-      const createdB = b.created_at ? new Date(b.created_at).getTime() : 0;
-      return createdA - createdB;
-    });
-
-    const map = new Map<string, number>();
-    let running = 0;
-    for (const item of sorted) {
-      if (item.type === 'masuk') {
-        running += Number(item.amount) || 0;
-      } else {
-        running -= Number(item.amount) || 0;
-      }
-      map.set(item.id, running);
-    }
-    return map;
+    return calculateRunningBalances(sourceList);
   }, [transactions, allTransactions]);
+
+  // Urutkan transaksi tabel Z - A (tanggal terbaru paling atas)
+  const displayTransactions = useMemo(() => {
+    return sortTransactionsDesc(transactions);
+  }, [transactions]);
 
   const confirmDelete = (tx: Transaction) => {
     if (window.confirm(`Yakin ingin menghapus transaksi "${tx.title}" senilai ${formatRupiah(tx.amount)}? Data akan terhapus langsung dari database Supabase.`)) {
@@ -167,7 +159,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-700">
-                {transactions.map((tx, idx) => {
+                {displayTransactions.map((tx, idx) => {
                   const isIncome = tx.type === 'masuk';
                   return (
                     <tr
@@ -255,7 +247,7 @@ export const TransactionTable: React.FC<TransactionTableProps> = ({
 
           {/* Mobile Card View */}
           <div className="md:hidden divide-y divide-slate-100">
-            {transactions.map((tx) => {
+            {displayTransactions.map((tx) => {
               const isIncome = tx.type === 'masuk';
               return (
                 <div key={tx.id} className="p-4 space-y-2.5">

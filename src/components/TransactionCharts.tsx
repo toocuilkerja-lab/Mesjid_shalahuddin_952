@@ -17,7 +17,8 @@ export const TransactionCharts: React.FC<TransactionChartsProps> = ({ transactio
   // Group by category
   const categoryMap: { [cat: string]: number } = {};
   filtered.forEach((tx) => {
-    categoryMap[tx.category] = (categoryMap[tx.category] || 0) + Number(tx.amount);
+    const cat = tx.category || 'Lainnya';
+    categoryMap[cat] = (categoryMap[cat] || 0) + Number(tx.amount);
   });
 
   const categories = Object.entries(categoryMap)
